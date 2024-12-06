@@ -311,6 +311,15 @@ public class JoinRender extends Renderer {
                                     r.getMiddle(), tableView.getAlias() + "." + r.getRight()))
                             .collect(Collectors.toList()));
                     matchJoinRelation.setJoinType(joinRelation.getJoinType());
+                //新增 join 条件判断，解决 join 条件顺序问题
+                }else if (joinRelation.getLeft().equalsIgnoreCase(tableView.getDataSource().getName())
+                        && before.containsKey(joinRelation.getRight())){
+                    matchJoinRelation.setJoinCondition(joinRelation.getJoinCondition().stream()
+                            .map(r -> Triple.of(
+                                    before.get(joinRelation.getRight()) + "." + r.getRight(),
+                                    r.getMiddle(), tableView.getAlias() + "." + r.getLeft()))
+                            .collect(Collectors.toList()));
+                    matchJoinRelation.setJoinType(joinRelation.getJoinType());
                 }
             }
         }

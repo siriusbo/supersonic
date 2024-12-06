@@ -356,16 +356,35 @@ public class DataSourceNode extends SemanticNode {
             Map<String, Long> orders = new HashMap<>();
             linkDataSourceName.add(baseDataSource.getName());
             orders.put(baseDataSource.getName(), 0L);
+//            for (JoinRelation joinRelation : schema.getJoinRelations()) {
+//                if (linkDataSourceName.contains(joinRelation.getLeft())
+//                        && linkDataSourceName.contains(joinRelation.getRight())) {
+//                    orders.put(joinRelation.getLeft(), 0L);
+//                    orders.put(joinRelation.getRight(), 1L);
+//                }
+//            }
+//            orders.entrySet().stream().sorted(Map.Entry.comparingByValue()).forEach(d -> {
+//                linkDataSources.add(schema.getDatasource().get(d.getKey()));
+//            });
+
+            //调整数据源中表的顺序，以便于后续join
+            ArrayList<String> joinTables = new ArrayList<>();
             for (JoinRelation joinRelation : schema.getJoinRelations()) {
                 if (linkDataSourceName.contains(joinRelation.getLeft())
                         && linkDataSourceName.contains(joinRelation.getRight())) {
-                    orders.put(joinRelation.getLeft(), 0L);
-                    orders.put(joinRelation.getRight(), 1L);
+                    joinTables.add(joinRelation.getLeft());
+                    joinTables.add(joinRelation.getRight());
                 }
             }
-            orders.entrySet().stream().sorted(Map.Entry.comparingByValue()).forEach(d -> {
-                linkDataSources.add(schema.getDatasource().get(d.getKey()));
-            });
+            for (String joinTable : joinTables) {
+                orders.put(joinTable,orders.getOrDefault(joinTable,0L) + 1L);
+            }
+            orders.entrySet()
+                    .stream()
+                    .sorted((entry1, entry2) -> entry2.getValue().compareTo(entry1.getValue())) // 倒序排序
+                    .forEach(d -> {
+                        linkDataSources.add(schema.getDatasource().get(d.getKey()));
+                    });
         }
         return linkDataSources;
     }
