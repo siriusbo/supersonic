@@ -25,6 +25,7 @@ import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import static org.mockito.Mockito.when;
 
@@ -76,9 +77,10 @@ class ModelServiceImplTest {
         DateInfoRepository dateInfoRepository = Mockito.mock(DateInfoRepository.class);
         DataSetService viewService = Mockito.mock(DataSetService.class);
         ModelRelaService modelRelaService = Mockito.mock(ModelRelaService.class);
+        ThreadPoolExecutor threadPoolExecutor = Mockito.mock(ThreadPoolExecutor.class);
         return new ModelServiceImpl(modelRepository, databaseService, dimensionService,
                 metricService, domainService, userService, viewService, dateInfoRepository,
-                modelRelaService);
+                modelRelaService, threadPoolExecutor);
     }
 
     private ModelReq mockModelReq() {

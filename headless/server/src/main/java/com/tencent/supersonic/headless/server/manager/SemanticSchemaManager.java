@@ -4,12 +4,13 @@ import com.tencent.supersonic.common.pojo.ModelRela;
 import com.tencent.supersonic.common.pojo.enums.FilterOperatorEnum;
 import com.tencent.supersonic.headless.api.pojo.response.DatabaseResp;
 import com.tencent.supersonic.headless.api.pojo.response.SemanticSchemaResp;
+import com.tencent.supersonic.headless.core.pojo.JoinRelation;
+import com.tencent.supersonic.headless.core.pojo.Ontology;
 import com.tencent.supersonic.headless.core.translator.parser.calcite.S2CalciteSchema;
 import com.tencent.supersonic.headless.core.translator.parser.s2sql.*;
 import com.tencent.supersonic.headless.core.translator.parser.s2sql.Materialization.TimePartType;
 import com.tencent.supersonic.headless.server.pojo.yaml.*;
 import com.tencent.supersonic.headless.server.service.SchemaService;
-import com.tencent.supersonic.headless.server.utils.DatabaseConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.stereotype.Service;
@@ -38,7 +39,7 @@ public class SemanticSchemaManager {
         schemaService.getSchemaYamlTpl(semanticSchemaResp, dimensionYamlTpls, dataModelYamlTpls,
                 metricYamlTpls, modelIdName);
         DatabaseResp databaseResp = semanticSchemaResp.getDatabaseResp();
-        ontology.setDatabase(DatabaseConverter.convert(databaseResp));
+        ontology.setDatabase(databaseResp);
         if (!CollectionUtils.isEmpty(semanticSchemaResp.getModelRelas())) {
             ontology.setJoinRelations(
                     getJoinRelation(semanticSchemaResp.getModelRelas(), modelIdName));
@@ -185,22 +186,10 @@ public class SemanticSchemaManager {
             if (Objects.nonNull(dimensionYamlTpl.getExt())) {
                 dimension.setExt(dimensionYamlTpl.getExt());
             }
-            dimension.setDimensionTimeTypeParams(
-                    getDimensionTimeTypeParams(dimensionYamlTpl.getTypeParams()));
+            dimension.setDimensionTimeTypeParams(dimensionYamlTpl.getTypeParams());
             dimensions.add(dimension);
         }
         return dimensions;
-    }
-
-    private static DimensionTimeTypeParams getDimensionTimeTypeParams(
-            DimensionTimeTypeParamsTpl dimensionTimeTypeParamsTpl) {
-        DimensionTimeTypeParams dimensionTimeTypeParams = new DimensionTimeTypeParams();
-        if (dimensionTimeTypeParamsTpl != null) {
-            dimensionTimeTypeParams
-                    .setTimeGranularity(dimensionTimeTypeParamsTpl.getTimeGranularity());
-            dimensionTimeTypeParams.setIsPrimary(dimensionTimeTypeParamsTpl.getIsPrimary());
-        }
-        return dimensionTimeTypeParams;
     }
 
     private static List<Identify> getIdentify(List<IdentifyYamlTpl> identifyYamlTpls) {

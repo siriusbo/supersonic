@@ -3,7 +3,7 @@ package com.tencent.supersonic.headless.core.translator.parser.calcite;
 import com.tencent.supersonic.common.calcite.Configuration;
 import com.tencent.supersonic.common.pojo.enums.EngineType;
 import com.tencent.supersonic.headless.api.pojo.enums.AggOption;
-import com.tencent.supersonic.headless.core.pojo.Database;
+import com.tencent.supersonic.headless.core.pojo.OntologyQuery;
 import com.tencent.supersonic.headless.core.pojo.QueryStatement;
 import com.tencent.supersonic.headless.core.translator.parser.calcite.node.DataModelNode;
 import com.tencent.supersonic.headless.core.translator.parser.calcite.node.SemanticNode;
@@ -13,19 +13,21 @@ import com.tencent.supersonic.headless.core.translator.parser.calcite.render.Ren
 import com.tencent.supersonic.headless.core.translator.parser.calcite.render.SourceRender;
 import com.tencent.supersonic.headless.core.translator.parser.s2sql.Constants;
 import com.tencent.supersonic.headless.core.translator.parser.s2sql.DataModel;
-import com.tencent.supersonic.headless.core.translator.parser.s2sql.OntologyQueryParam;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Objects;
 
 @Slf4j
 public class SqlBuilder {
 
     private final S2CalciteSchema schema;
-    private OntologyQueryParam ontologyQueryParam;
+    private OntologyQuery ontologyQuery;
     private SqlValidatorScope scope;
     private SqlNode parserNode;
     private boolean isAgg = false;
@@ -36,23 +38,21 @@ public class SqlBuilder {
     }
 
     public String buildOntologySql(QueryStatement queryStatement) throws Exception {
-        this.ontologyQueryParam = queryStatement.getOntologyQueryParam();
-        if (ontologyQueryParam.getLimit() == null) {
-            ontologyQueryParam.setLimit(0L);
+        this.ontologyQuery = queryStatement.getOntologyQuery();
+        if (ontologyQuery.getLimit() == null) {
+            ontologyQuery.setLimit(0L);
         }
-        this.aggOption = ontologyQueryParam.getAggOption();
+        this.aggOption = ontologyQuery.getAggOption();
 
         buildParseNode();
-        Database database = queryStatement.getOntology().getDatabase();
-        optimizeParseNode(database.getType());
-        return getSql(database.getType());
+        optimizeParseNode(queryStatement.getOntology().getDatabaseType());
+        return getSql(queryStatement.getOntology().getDatabaseType());
     }
 
     private void buildParseNode() throws Exception {
         // find relevant data models
         scope = SchemaBuilder.getScope(schema);
-        List<DataModel> dataModels =
-                DataModelNode.getQueryDataModels(scope, schema, ontologyQueryParam);
+        List<DataModel> dataModels = DataModelNode.getQueryDataModels(scope, schema, ontologyQuery);
         if (dataModels == null || dataModels.isEmpty()) {
             throw new Exception("data model not found");
         }
@@ -69,14 +69,14 @@ public class SqlBuilder {
         while (it.hasNext()) {
             Renderer renderer = it.next();
             if (previous != null) {
-                previous.render(ontologyQueryParam, dataModels, scope, schema, !isAgg);
+                previous.render(ontologyQuery, dataModels, scope, schema, !isAgg);
                 renderer.setTable(previous
                         .builderAs(DataModelNode.getNames(dataModels) + "_" + String.valueOf(i)));
                 i++;
             }
             previous = renderer;
         }
-        builders.getLast().render(ontologyQueryParam, dataModels, scope, schema, !isAgg);
+        builders.getLast().render(ontologyQuery, dataModels, scope, schema, !isAgg);
         parserNode = builders.getLast().builder();
     }
 
@@ -87,7 +87,7 @@ public class SqlBuilder {
         // default by dataModel time aggregation
         if (Objects.nonNull(dataModel.getAggTime()) && !dataModel.getAggTime()
                 .equalsIgnoreCase(Constants.DIMENSION_TYPE_TIME_GRANULARITY_NONE)) {
-            if (!ontologyQueryParam.isNativeQuery()) {
+            if (!ontologyQuery.isNativeQuery()) {
                 return true;
             }
         }

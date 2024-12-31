@@ -51,6 +51,7 @@ import com.tencent.supersonic.headless.server.utils.NameCheckUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,10 +69,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -96,13 +94,13 @@ public class ModelServiceImpl implements ModelService {
 
     private final ModelRelaService modelRelaService;
 
-    ExecutorService executor =
-            new ThreadPoolExecutor(0, 5, 5L, TimeUnit.SECONDS, new LinkedBlockingQueue<>());
+    private final ThreadPoolExecutor executor;
 
     public ModelServiceImpl(ModelRepository modelRepository, DatabaseService databaseService,
             @Lazy DimensionService dimensionService, @Lazy MetricService metricService,
             DomainService domainService, UserService userService, DataSetService dataSetService,
-            DateInfoRepository dateInfoRepository, ModelRelaService modelRelaService) {
+            DateInfoRepository dateInfoRepository, ModelRelaService modelRelaService,
+            @Qualifier("commonExecutor") ThreadPoolExecutor executor) {
         this.modelRepository = modelRepository;
         this.databaseService = databaseService;
         this.dimensionService = dimensionService;
@@ -112,6 +110,7 @@ public class ModelServiceImpl implements ModelService {
         this.dataSetService = dataSetService;
         this.dateInfoRepository = dateInfoRepository;
         this.modelRelaService = modelRelaService;
+        this.executor = executor;
     }
 
     @Override

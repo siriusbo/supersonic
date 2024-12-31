@@ -1,6 +1,7 @@
 package com.tencent.supersonic.headless.core.translator.parser.calcite.render;
 
 import com.tencent.supersonic.common.pojo.enums.EngineType;
+import com.tencent.supersonic.headless.core.pojo.OntologyQuery;
 import com.tencent.supersonic.headless.core.translator.parser.calcite.S2CalciteSchema;
 import com.tencent.supersonic.headless.core.translator.parser.calcite.TableView;
 import com.tencent.supersonic.headless.core.translator.parser.calcite.node.DataModelNode;
@@ -16,7 +17,6 @@ import com.tencent.supersonic.headless.core.translator.parser.s2sql.Identify;
 import com.tencent.supersonic.headless.core.translator.parser.s2sql.Materialization;
 import com.tencent.supersonic.headless.core.translator.parser.s2sql.Measure;
 import com.tencent.supersonic.headless.core.translator.parser.s2sql.Metric;
-import com.tencent.supersonic.headless.core.translator.parser.s2sql.OntologyQueryParam;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
@@ -107,7 +107,7 @@ public class SourceRender extends Renderer {
             S2CalciteSchema schema, boolean nonAgg, Map<String, String> extendFields,
             TableView dataSet, TableView output, SqlValidatorScope scope) throws Exception {
         List<Dimension> dimensionList = schema.getDimensions().get(datasource.getName());
-        EngineType engineType = schema.getOntology().getDatabase().getType();
+        EngineType engineType = schema.getOntology().getDatabaseType();
         boolean isAdd = false;
         if (!CollectionUtils.isEmpty(dimensionList)) {
             for (Dimension dim : dimensionList) {
@@ -185,7 +185,7 @@ public class SourceRender extends Renderer {
             SqlValidatorScope scope, S2CalciteSchema schema, boolean nonAgg) throws Exception {
         Iterator<String> iterator = fields.iterator();
         List<SqlNode> whereNode = new ArrayList<>();
-        EngineType engineType = schema.getOntology().getDatabase().getType();
+        EngineType engineType = schema.getOntology().getDatabaseType();
         while (iterator.hasNext()) {
             String cur = iterator.next();
             if (queryDimensions.contains(cur) || queryMetrics.contains(cur)) {
@@ -334,12 +334,12 @@ public class SourceRender extends Renderer {
         }
     }
 
-    public void render(OntologyQueryParam ontologyQueryParam, List<DataModel> dataModels,
+    public void render(OntologyQuery ontologyQuery, List<DataModel> dataModels,
             SqlValidatorScope scope, S2CalciteSchema schema, boolean nonAgg) throws Exception {
-        String queryWhere = ontologyQueryParam.getWhere();
+        String queryWhere = ontologyQuery.getWhere();
         Set<String> whereFields = new HashSet<>();
         List<String> fieldWhere = new ArrayList<>();
-        EngineType engineType = schema.getOntology().getDatabase().getType();
+        EngineType engineType = schema.getOntology().getDatabaseType();
         if (queryWhere != null && !queryWhere.isEmpty()) {
             SqlNode sqlNode = SemanticNode.parse(queryWhere, scope, engineType);
             FilterNode.getFilterField(sqlNode, whereFields);
@@ -347,13 +347,13 @@ public class SourceRender extends Renderer {
         }
         if (dataModels.size() == 1) {
             DataModel dataModel = dataModels.get(0);
-            super.tableView = renderOne("", fieldWhere, ontologyQueryParam.getMetrics(),
-                    ontologyQueryParam.getDimensions(), ontologyQueryParam.getWhere(), dataModel,
-                    scope, schema, nonAgg);
+            super.tableView = renderOne("", fieldWhere, ontologyQuery.getMetrics(),
+                    ontologyQuery.getDimensions(), ontologyQuery.getWhere(), dataModel, scope,
+                    schema, nonAgg);
             return;
         }
         JoinRender joinRender = new JoinRender();
-        joinRender.render(ontologyQueryParam, dataModels, scope, schema, nonAgg);
+        joinRender.render(ontologyQuery, dataModels, scope, schema, nonAgg);
         super.tableView = joinRender.getTableView();
     }
 }
