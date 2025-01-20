@@ -26,11 +26,7 @@ public class DbDialectOptimizer implements QueryOptimizer {
         SemanticSchemaResp semanticSchemaResp = queryStatement.getSemanticSchema();
         DatabaseResp database = semanticSchemaResp.getDatabaseResp();
         String sql = queryStatement.getSql();
-        if (Objects.isNull(database) || Objects.isNull(database.getType())) {
-            return;
-        }
-        String type = database.getType();
-        DbAdaptor engineAdaptor = DbAdaptorFactory.getEngineAdaptor(type.toLowerCase());
+        DbAdaptor engineAdaptor = DbAdaptorFactory.getEngineAdaptor(database.getType());
         if (Objects.nonNull(engineAdaptor)) {
             String adaptedSql = engineAdaptor.rewriteSql(sql);
             queryStatement.setSql(adaptedSql);
