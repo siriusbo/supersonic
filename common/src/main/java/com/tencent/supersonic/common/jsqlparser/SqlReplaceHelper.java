@@ -38,6 +38,10 @@ public class SqlReplaceHelper {
 
     private final static double replaceColumnThreshold = 0.4;
 
+    public static String escapeTableName(String table) {
+        return String.format("`%s`", table);
+    }
+
     public static String replaceAggFields(String sql,
             Map<String, Pair<String, String>> fieldNameToAggMap) {
         Select selectStatement = SqlSelectHelper.getSelect(sql);
@@ -142,6 +146,10 @@ public class SqlReplaceHelper {
     public static String replaceFields(String sql, Map<String, String> fieldNameMap,
             boolean exactReplace) {
         Select selectStatement = SqlSelectHelper.getSelect(sql);
+        // alias field should not be replaced
+        Set<String> aliases = SqlSelectHelper.getAliasFields(sql);
+        aliases.forEach(alias -> fieldNameMap.put(alias, alias));
+
         Set<Select> plainSelectList = SqlSelectHelper.getAllSelect(selectStatement);
         for (Select plainSelect : plainSelectList) {
             if (plainSelect instanceof PlainSelect) {
@@ -482,6 +490,52 @@ public class SqlReplaceHelper {
         Map<String, String> aliasToActualExpression = visitor.getAliasToActualExpression();
         if (Objects.nonNull(aliasToActualExpression) && !aliasToActualExpression.isEmpty()) {
             return replaceFields(selectStatement.toString(), aliasToActualExpression, true);
+        }
+        return selectStatement.toString();
+    }
+
+    public static String replaceAliasWithBackticks(String sql) {
+        Select selectStatement = SqlSelectHelper.getSelect(sql);
+        if (!(selectStatement instanceof PlainSelect)) {
+            return sql;
+        }
+        PlainSelect plainSelect = (PlainSelect) selectStatement;
+        FieldAliasReplaceWithBackticksVisitor visitor = new FieldAliasReplaceWithBackticksVisitor();
+        for (SelectItem selectItem : plainSelect.getSelectItems()) {
+            selectItem.accept(visitor);
+        }
+        // Replace `order by` and `group by`
+        // Get the map of field aliases that have been replaced
+        Map<String, String> aliasReplacedMap = visitor.getFieldAliasReplacedMap();
+
+        // If no aliases have been replaced, return the original SQL statement as a string
+        if (aliasReplacedMap.isEmpty()) {
+            return selectStatement.toString();
+        }
+        // Order by elements
+        List<OrderByElement> orderByElements = selectStatement.getOrderByElements();
+        if (!CollectionUtils.isEmpty(orderByElements)) {
+            for (OrderByElement orderByElement : orderByElements) {
+                orderByElement.accept(new OrderByReplaceVisitor(aliasReplacedMap, true));
+            }
+        }
+        // Group by elements
+        GroupByElement groupByElement = plainSelect.getGroupBy();
+        if (Objects.nonNull(groupByElement)) {
+            groupByElement.accept(new GroupByReplaceVisitor(aliasReplacedMap, true));
+        }
+        // Alias columns
+        for (SelectItem<?> selectItem : plainSelect.getSelectItems()) {
+            if (selectItem.getExpression() instanceof Column) {
+                replaceColumn((Column) selectItem.getExpression(), aliasReplacedMap, true);
+            }
+        }
+        // Having
+        Expression having = plainSelect.getHaving();
+        if (Objects.nonNull(having)) {
+            ExpressionReplaceVisitor expressionReplaceVisitor =
+                    new ExpressionReplaceVisitor(aliasReplacedMap);
+            having.accept(expressionReplaceVisitor);
         }
         return selectStatement.toString();
     }

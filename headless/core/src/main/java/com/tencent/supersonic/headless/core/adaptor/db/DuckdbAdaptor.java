@@ -19,8 +19,8 @@ public class DuckdbAdaptor extends DefaultDbAdaptor {
         return metaData.getTables(schemaName, null, null, new String[] {"TABLE", "VIEW"});
     }
 
-    public List<DBColumn> getColumns(ConnectInfo connectInfo, String schemaName, String tableName)
-            throws SQLException {
+    public List<DBColumn> getColumns(ConnectInfo connectInfo, String catalog, String schemaName,
+            String tableName) throws SQLException {
         List<DBColumn> dbColumns = Lists.newArrayList();
         DatabaseMetaData metaData = getDatabaseMetaData(connectInfo);
         ResultSet columns = metaData.getColumns(schemaName, null, tableName, null);
@@ -36,6 +36,9 @@ public class DuckdbAdaptor extends DefaultDbAdaptor {
 
     @Override
     public String rewriteSql(String sql) {
+        if (sql == null) {
+            return null;
+        }
         return sql.replaceAll("`", "");
     }
 

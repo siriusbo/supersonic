@@ -5,7 +5,7 @@ import com.tencent.supersonic.headless.api.pojo.enums.FieldType;
 import lombok.Data;
 
 @Data
-public class ColumnSchema {
+public class SemanticColumn {
 
     private String columnName;
 
@@ -15,8 +15,12 @@ public class ColumnSchema {
 
     private FieldType filedType;
 
-    private AggOperatorEnum agg = AggOperatorEnum.ANY;
+    private AggOperatorEnum agg = AggOperatorEnum.NONE;
 
     private String name;
+
+    private String expr;
+
+    private String unit;
 
 }

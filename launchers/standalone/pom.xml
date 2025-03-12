@@ -18,6 +18,16 @@
     </properties>
     <dependencies>
         <dependency>
+            <groupId>com.github.xiaoymin</groupId>
+            <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
+            <version>4.5.0</version>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
+            <version>4.0.2</version>
+        </dependency>
+        <dependency>
             <groupId>com.tencent.supersonic</groupId>
             <artifactId>launchers-common</artifactId>
             <version>${project.version}</version>

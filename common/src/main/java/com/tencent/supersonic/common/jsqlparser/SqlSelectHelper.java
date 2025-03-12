@@ -228,7 +228,7 @@ public class SqlSelectHelper {
             statement = CCJSqlParserUtil.parse(sql);
         } catch (JSQLParserException e) {
             log.error("parse error, sql:{}", sql, e);
-            return null;
+            throw new RuntimeException(e);
         }
 
         if (statement instanceof ParenthesedSelect) {
@@ -294,7 +294,8 @@ public class SqlSelectHelper {
         }
         // do not account in aliases
         results.removeAll(aliases);
-        return new ArrayList<>(results);
+        return new ArrayList<>(
+                results.stream().map(r -> r.replaceAll("`", "")).collect(Collectors.toList()));
     }
 
     private static List<String> getFieldsByPlainSelect(PlainSelect plainSelect) {
@@ -988,6 +989,15 @@ public class SqlSelectHelper {
         for (SelectItem selectItem : selectItems) {
             selectItem.accept(visitor);
         }
+        if (plainSelect.getHaving() != null) {
+            plainSelect.getHaving().accept(visitor);
+        }
+        if (!CollectionUtils.isEmpty(plainSelect.getOrderByElements())) {
+            for (OrderByElement orderByElement : plainSelect.getOrderByElements()) {
+                orderByElement.getExpression().accept(visitor);
+            }
+        }
+
         return !visitor.getFunctionNames().isEmpty();
     }
 

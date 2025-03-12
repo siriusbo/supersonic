@@ -36,13 +36,15 @@ public interface DatabaseService {
 
     void deleteDatabase(Long databaseId);
 
-    List<String> getDbNames(Long id) throws SQLException;
+    List<String> getCatalogs(Long id) throws SQLException;
 
-    List<String> getTables(Long id, String db) throws SQLException;
+    List<String> getDbNames(Long id, String catalog) throws SQLException;
+
+    List<String> getTables(Long id, String catalog, String db) throws SQLException;
 
     Map<String, List<DBColumn>> getDbColumns(ModelBuildReq modelBuildReq) throws SQLException;
 
-    List<DBColumn> getColumns(Long id, String db, String table) throws SQLException;
+    List<DBColumn> getColumns(Long id, String catalog, String db, String table) throws SQLException;
 
     List<DBColumn> getColumns(Long id, String sql) throws SQLException;
 }
