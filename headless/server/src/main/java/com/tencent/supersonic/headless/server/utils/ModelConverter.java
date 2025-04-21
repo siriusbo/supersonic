@@ -145,8 +145,9 @@ public class ModelConverter {
     public static ModelReq convert(ModelSchema modelSchema, ModelBuildReq modelBuildReq,
             String tableName) {
         ModelReq modelReq = new ModelReq();
-        modelReq.setName(modelBuildReq.getName());
-        modelReq.setBizName(modelBuildReq.getBizName());
+        modelReq.setName(modelBuildReq.getName() != null ? modelBuildReq.getName() : tableName);
+        modelReq.setBizName(
+                modelBuildReq.getBizName() != null ? modelBuildReq.getBizName() : tableName);
         modelReq.setDatabaseId(modelBuildReq.getDatabaseId());
         modelReq.setDomainId(modelBuildReq.getDomainId());
         ModelDetail modelDetail = new ModelDetail();
@@ -160,7 +161,7 @@ public class ModelConverter {
         List<Field> fields = new ArrayList<>();
         for (SemanticColumn semanticColumn : modelSchema.getSemanticColumns()) {
             FieldType fieldType = semanticColumn.getFiledType();
-            fields.add(new Field(semanticColumn.getName(), semanticColumn.getDataType()));
+            fields.add(new Field(semanticColumn.getColumnName(), semanticColumn.getDataType()));
 
             if (getIdentifyType(fieldType) != null) {
                 Identify identify = new Identify(semanticColumn.getName(),
@@ -273,12 +274,14 @@ public class ModelConverter {
         List<Measure> measures = modelReq.getModelDetail().getMeasures();
         List<Dimension> dimensions = modelReq.getModelDetail().getDimensions();
         List<Identify> identifiers = modelReq.getModelDetail().getIdentifiers();
+        List<Field> fields = modelReq.getModelDetail().getFields();
 
         if (measures != null) {
             for (Measure measure : measures) {
                 if (StringUtils.isNotBlank(measure.getBizName())
                         && StringUtils.isBlank(measure.getExpr())) {
                     measure.setExpr(measure.getBizName());
+                    fields.add(new Field(measure.getBizName(), ""));
                 }
             }
         }
@@ -287,6 +290,7 @@ public class ModelConverter {
                 if (StringUtils.isNotBlank(dimension.getBizName())
                         && StringUtils.isBlank(dimension.getExpr())) {
                     dimension.setExpr(dimension.getBizName());
+                    fields.add(new Field(dimension.getBizName(), ""));
                 }
             }
         }
@@ -297,6 +301,7 @@ public class ModelConverter {
                     identify.setName(identify.getBizName());
                 }
                 identify.setIsCreateDimension(1);
+                fields.add(new Field(identify.getBizName(), ""));
             }
         }
 
